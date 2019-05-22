@@ -1,0 +1,37 @@
+<?php
+
+protected function refreshList()
+    {
+        $this->process = new Process(
+        'php wrap_curl.php curl ' . sprintf(self::API_URL, $this->subreddit));
+        $this->process->start();
+
+        $this->intervalObservable
+            ->takeWhile(function() {
+                return $this->process->isRunning();
+            })
+            ->subscribe(null, null, function() {
+                $jsonString = $this->process->getOutput();
+                if (!$jsonString) {
+                    return;
+                }
+
+                $response = json_decode($jsonString, true);
+                $articles = $response['data']['children'];
+		//the rest is unchanged
+	 foreach ($articles as $i => $entry) {
+ 	       $this->output->writeln("<info>${i}</info> " .
+ 		   $entry['data']['title']);
+ 	}
+
+ 	   $this->printHelp();
+ 	   $template = ', <info>[%d-%d]</info>: Read article';
+ 	   $this->output->writeln(
+ 	       sprintf($template, 0, count($articles)));
+ 
+	   $this->chooseArticleDetail($articles);
+ 	}), function($e) {
+ 	   $this->output->writeln(
+ 	       '<error>Unable to download data</error>');
+ 	});
+ }
